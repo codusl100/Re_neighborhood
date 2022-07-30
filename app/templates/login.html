@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<link rel="shortcut icon" href="{{url_for('static', filename='./images/asd.ico')}}">
+    <meta charset="UTF-8">
+    <title>Pet Diary - 로그인</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+          crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+    <style>
+        #loginForms {
+            width: 500px;
+            margin: 0 auto;
+            margin-top: 100px;
+        }
+
+        .btn {
+            display: block;
+            margin: 0 auto;
+            margin-top: 50px;
+        }
+        .signup {
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+        .signup > a {
+            text-decoration: none;
+        }
+    </style>
+    <script>
+        function sign_in() {
+            let userid = $("#userid").val();
+            let userpw = $("#userpassword").val();
+
+            if (userid == "") {
+                alert("아이디를 입력해주세요!")
+                return false;
+            }
+            if (userpw == "") {
+                alert("비밀번호를 입력해주세요!")
+                return false;
+            }
+
+            $.ajax({
+                type: "POST",
+                url: "/api/login",
+                data: {
+                    id_give: userid,
+                    pw_give: userpw
+                },
+                success: function (response) {
+                    if (response['result'] == 'success') {
+                        $.cookie('mytoken', response['token']);
+                        window.location.href = '/main'
+                    } else {
+                        alert(response['msg'])
+                    }
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+{% include 'header.html' %}
+<form action="">
+    <div id="loginForms">
+        <div class="mb-3">
+            <label class="form-label">로그인</label>
+            <input type="text" class="form-control" id="userid" placeholder="아이디를 입력해주세요.">
+        </div>
+        <div class="mb-3">
+            <label class="form-label">비밀번호</label>
+            <input type="password" class="form-control" id="userpassword" placeholder="비밀번호를 입력해주세요.">
+            <p class="signup">아직 회원이 아니신가요? <a href="/sign_up">그럼 회원가입을 먼저해주세요!</a></p>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" onclick="sign_in()">로그인 하기</button>
+    </div>
+</form>
+</body>
+</html>

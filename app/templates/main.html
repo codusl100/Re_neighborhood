@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='./images/asd.ico') }}">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+            integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+            crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+
+    <title>Pet diary</title>
+
+
+    <style>
+        html, body {
+            height: 100%;
+        }
+
+        .wrap {
+            width: 900px;
+            margin: auto;
+            margin-top: 30px;
+        }
+
+        .box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            width: 600px;
+            box-shadow: 7px 7px 7px rgba(0, 0, 0, 0.25);
+        }
+
+        .card {
+            margin-top: 50px;
+        }
+
+        .card-img-top {
+            border-bottom: 1px solid #c4c4c4;
+        }
+
+        .buttons {
+            margin: 0 auto;
+            margin-bottom: 50px;
+        }
+    </style>
+
+    <script>
+        function show_detail(title, content, date, author, file, _id) {
+            const save = [title,content,date,author,file,_id]
+            localStorage.setItem('save',JSON.stringify(save))
+
+            let token = $.cookie('mytoken');
+            $.ajax({
+                type: "POST",
+                url: "/api/check",
+                data: {
+                    token_give: token
+                },
+                success: function (response) {
+                    let buttons = "";
+                    if (response['dec'] === author) {
+                        buttons = `
+                                       <div class="buttons">
+                                           <button type="button" onclick="_delete('${author}', '${_id}')" class="btn btn-danger btn-cancel">삭제하기</button>
+                                       </div>`;
+                    }
+                    ;
+                    let temp_html = `<div class="card mb-3 box">
+                                  <img class="card-img-top" src="../static/${file}" alt="Card image cap">
+                                      <div class="card-body">
+                                        <h5 class="card-title">제목 : ${title}</h5>
+                                        <p class="card-text">내용 : ${content}</p>
+                                        <p class="card-text"><small class="text-muted">작성일자 : ${date}</small></p>
+                                        <p class="card-text"><small class="text-muted">닉네임 : ${author}</small></p>
+                                      </div>
+                                      ${buttons}
+                                </div>`
+
+                    $("#html_wrap").prepend(temp_html);
+                    $(".cards").css({
+                        "background-color": "rgba(0,0,0,0.05)",
+                        "pointer-events": "none"
+                    })
+                    $(".card-img").css({
+                        "opacity": "0.5"
+                    });
+                    $("#body").css({
+                        "background-color": "rgba(0,0,0,0.25)",
+                        "z-index": "-1"
+                    });
+                }
+            })
+        }
+
+        function _delete(author, _id) {
+            let token_give = $.cookie('mytoken')
+
+            $.ajax({
+                type: "POST",
+                url: "/api/valid_to_delete",
+                data: {id_give: author , token_give : token_give},
+                success: function (response) {
+                    if (response['result'] == 'success' && response['is_authorized'] == 'True') {
+                        $.ajax({
+                            type: "POST",
+                            url: "/api/delete_by__id",
+                            data: {_id_give: _id},
+                            success: function (response) {
+                                alert(response['msg'])
+                            }
+                        })
+
+                        window.location.href = '/'
+                    } else if (response['result'] == 'success' && response['is_authorized'] == 'False') {
+
+                        alert('권한이 없습니다.')
+                    } else{
+                    }
+                }
+            })
+
+        }
+
+
+        $(document).on("click", function (e) {
+            if ($("#body").is(e.target)) {
+                $("#body").css({
+                    "background-color": "white"
+                });
+                $(".cards").css({
+                    "background-color": "white",
+                    "pointer-events": "auto"
+                });
+                $(".card-img").css({
+                    "opacity": "1"
+                });
+                $(".box").remove();
+            }
+        })
+    </script>
+</head>
+
+<body id="body">
+
+<!--<nav class="navbar navbar-expand-lg navbar-dark bg-secondary fixed-top">-->
+<!--    <a class="navbar-brand text-white href=" #">애견다이어리</a>-->
+<!--    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"-->
+<!--            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">-->
+<!--        <span class="navbar-toggler-icon"></span>-->
+<!--    </button>-->
+
+<!--    <div class="collapse navbar-collapse" id="navbarSupportedContent">-->
+<!--        <ul class="navbar-nav mr-auto">-->
+<!--            &lt;!&ndash;            <li class="nav-item active">&ndash;&gt;-->
+<!--            &lt;!&ndash;                <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>&ndash;&gt;-->
+<!--            &lt;!&ndash;            </li>&ndash;&gt;-->
+<!--            <li class="nav-item">-->
+<!--                <a class="nav-link" href="#">+일기작성</a>-->
+<!--            </li>-->
+<!--            &lt;!&ndash;            <li class="nav-item dropdown">&ndash;&gt;-->
+<!--            &lt;!&ndash;                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"&ndash;&gt;-->
+<!--            &lt;!&ndash;                   data-toggle="dropdown"&ndash;&gt;-->
+<!--            &lt;!&ndash;                   aria-haspopup="true" aria-expanded="false">&ndash;&gt;-->
+<!--            &lt;!&ndash;                    Dropdown&ndash;&gt;-->
+<!--            &lt;!&ndash;                </a>&ndash;&gt;-->
+<!--            &lt;!&ndash;                <div class="dropdown-menu" aria-labelledby="navbarDropdown">&ndash;&gt;-->
+<!--            &lt;!&ndash;                    <a class="dropdown-item" href="#">Action</a>&ndash;&gt;-->
+<!--            &lt;!&ndash;                    <a class="dropdown-item" href="#">Another action</a>&ndash;&gt;-->
+<!--            &lt;!&ndash;                    <div class="dropdown-divider"></div>&ndash;&gt;-->
+<!--            &lt;!&ndash;                    <a class="dropdown-item" href="#">Something else here</a>&ndash;&gt;-->
+<!--            &lt;!&ndash;                </div>&ndash;&gt;-->
+<!--            &lt;!&ndash;            </li>&ndash;&gt;-->
+<!--            &lt;!&ndash;            <li class="nav-item">&ndash;&gt;-->
+<!--            &lt;!&ndash;                <a class="nav-link disabled" href="#">Disabled</a>&ndash;&gt;-->
+<!--            &lt;!&ndash;            </li>&ndash;&gt;-->
+<!--        </ul>-->
+<!--        <div class="form-inline">-->
+<!--        <span class="navbar-text navbar-right">-->
+<!--            xxx님 환영합니다.-->
+<!--        </span>-->
+<!--            <ul class="navbar-nav mr-auto navbar-right">-->
+<!--                <li class="nav-item">-->
+<!--                    <a class="nav-link" href="#">로그아웃</a>-->
+<!--                </li>-->
+<!--            </ul>-->
+<!--        </div>-->
+<!--        &lt;!&ndash;        <form class="form-inline my-2 my-lg-0">&ndash;&gt;-->
+<!--        &lt;!&ndash;            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">&ndash;&gt;-->
+<!--        &lt;!&ndash;            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>&ndash;&gt;-->
+<!--        &lt;!&ndash;        </form>&ndash;&gt;-->
+<!--    </div>-->
+<!--</nav>-->
+{% include 'header.html' %}
+<div class="wrap" id="html_wrap">
+    <div class="row" id="html_reviews" class="flex">
+        {% for review in reviews %}
+            <div class="col-sm-4">
+                <div class="card cards" style="cursor: pointer;"
+                     onclick="show_detail(`{{ review['title'] }}`,`{{ review['content'] }}`,`{{ review['date'] }}`,`{{ review['author'] }}`, `{{ review['file'] }}`, `{{ review['_id'] }}`)">
+                    <img class="card-img-top card-img" src="../static/{{ review['file'] }}" alt="이미지">
+                    <div class="card-body">
+                        <h5 class="card-title">제목 : {{ review['title'] }}</h5>
+                        <p class="card-text">내용 : {{ review['content'] }}</p>
+                        <p class="card-text"><small class="text-muted">작성일자 : {{ review['date'] }}</small></p>
+                        <p class="card-text"><small class="text-muted">닉네임 : {{ review['author'] }}</small></p>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+</body>
+
+</html>
