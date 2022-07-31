@@ -1,178 +1,51 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for
-#from pymongo import MongoClient
-import jwt
-import hashlib
-import datetime as dt
-from datetime import datetime
-import os
-from bson.objectid import ObjectId
+import os  # 절대경로를 지정하기 위한 Os모듈 임포트
+from flask import Flask
+from flask import request  # 회원정보 제출했을때 받아오기 위한 request, post요청을 활성화시키기 위함
+from flask import redirect  # 페이지 이동시키는 함수
+from flask import render_template
+from models import db
+from models import Fcuser  # 모델의 클래스 가져오기.
+
+from flask_wtf.csrf import CSRFProtect
+from form import RegisterForm
 
 app = Flask(__name__)
-#client = MongoClient('localhost', 27017)
-#db = client.dbpetdiary
-
-SECRET_KEY = 'RE_NEIGHBORHOOD'
-
 
 @app.route('/')
-def home():
-    token_receive = request.cookies.get('mytoken')
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-        return redirect("main")
-    except jwt.ExpiredSignatureError:
-        return redirect(url_for("login"))
-    except jwt.exceptions.DecodeError:
-        return redirect(url_for("login"))
-
-
-@app.route('/main') # 메인페이지
 def main():
-    token_receive = request.cookies.get('mytoken')
-    try:
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
+    return render_template('main.html')
 
-        reviews = list(db.reviews.find({}).sort("date", -1))
-        return render_template('main.html', reviews=reviews)
-    except jwt.ExpiredSignatureError:
-        return redirect(url_for("login"))
-    except jwt.exceptions.DecodeError:
-        return redirect(url_for("login"))
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegisterForm()
+    if form.validate_on_submit():  # POST검사의 유효성검사
 
+        user = Fcuser()
+        user.useremail = form.data.get('useremail')
+        user.username = form.data.get('username')
+        user.password = form.data.get('password')
 
-@app.route('/login')
-def login():
-    return render_template('login.html')
+        db.session.add(user)  # 회원정보 DB에 저장
+        db.session.commit()
+        return "가입 완료"
 
-
-@app.route('/api/login', methods=['POST'])
-def api_login():
-    email_receive = request.form['email_give']
-    pw_receive = request.form['pw_give']
-
-    pw_hash = hashlib.sha256(pw_receive.encode('utf-8')).hexdigest()
-    result = db.user.find_one({'user_email': email_receive, 'password': pw_hash})
-
-    if result is not None:
-        payload = {
-            'email': email_receive,
-            'exp': dt.datetime.utcnow() + dt.timedelta(minutes=60 * 60 * 24)
-        }
-        token = jwt.encode(payload, SECRET_KEY, algorithm='HS256')
-
-        return jsonify({'result': 'success', 'token': token})
-    else:
-        return jsonify({'result': 'fail', 'msg': '이메일/비밀번호가 일치하지 않습니다.'})
+    return render_template('register.html', form=form)
 
 
-def isDuplicate(_email): # 이메일 중복
-    if db.user.find_one({'user_email': _email}):
-        return True
-    return False
+if __name__ == "__main__":
+    basedir = os.path.abspath(os.path.dirname(__file__)) # db파일 절대경로
+    dbfile = os.path.join(basedir, 'db.sqlite')
 
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + dbfile
+    app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SECRET_KEY'] = 'qwejhqoifuas'
 
-@app.route('/sign_in')
-def sign_in():
-    return render_template('sign_up.html')
+    csrf = CSRFProtect()
+    csrf.init_app(app)
 
+    db.init_app(app)
+    db.app = app
+    db.create_all()  # db 생성
 
-@app.route('/api/sign_in', methods=['POST'])
-def api_sign_in():
-    result = request.form
-    _email = request.form['user-email']
-    if isDuplicate(_email):
-        return jsonify({'success': False, 'msg': '중복된 이메일입니다.'})
-    _password = request.form['user-password']
-    _pw_hash = hashlib.sha256(_password.encode('utf-8')).hexdigest()
-    db.user.insert_one({'user_email': _email, 'password': _pw_hash})
-    return jsonify({'success': True, 'msg': '로그인 페이지로 이동합니다.'})
-
-@app.route('/api/check', methods=['POST'])
-def diary_check():
-    token_receive = request.form['token_give']
-    # author_receive = request.form['author_give']
-
-    decode_receive = jwt.decode(token_receive,SECRET_KEY,algorithms='HS256')
-
-    return jsonify({'dec':decode_receive['id']})
-    # if decode_receive['id'] == author_receive:
-    #     return jsonify({'result':'success', 'msg':'ㅎㅇㅎㅇ'})
-    # else:
-    #     return jsonify({'result':'fail', 'msg':'ㄴㄴ', 'dec':decode_receive['id']})
-
-@app.route('/post')
-def post():
-    return render_template('post.html')
-
-
-@app.route('/api/diary_save', methods=['POST'])
-def save_diary():
-    title_receive = request.form['title_give']
-    content_receive = request.form['content_give']
-
-    today = datetime.now()
-    mytime = today.strftime('%Y-%m-%d-%H-%M-%S')
-
-    file = request.files["file_give"]
-
-    extension = file.filename.split('.')[-1]
-    filename = f'file-{mytime}'
-    save_to = f'static/images/{filename}.{extension}'
-    file.save(save_to)
-
-    token_receive = request.cookies.get('mytoken')
-    payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-    author = db.user.find_one({'user_id': payload['id']})
-
-    doc = {
-        'title': title_receive,
-        'content': content_receive,
-        'date': today.strftime('%Y-%m-%d %H:%M'),
-        'author': author['user_id'],
-        'file': f'images/{filename}.{extension}'
-    }
-
-    db.reviews.insert_one(doc)
-
-    return jsonify({'msg': '작성완료!'})
-
-@app.route('/api/valid_to_delete', methods=['POST'])
-def api_valid():
-
-    token_receive = request.form['token_give']
-    author_receive = request.form['id_give']
-
-    try:
-        # token을 시크릿키로 디코딩합니다.
-        # 보실 수 있도록 payload를 print 해두었습니다. 우리가 로그인 시 넣은 그 payload와 같은 것이 나옵니다.
-        payload = jwt.decode(token_receive, SECRET_KEY, algorithms=['HS256'])
-
-        # payload 안에 id가 들어있습니다. 이 id로 유저정보를 찾습니다.
-        # 여기에선 그 예로 닉네임을 보내주겠습니다.
-        if payload['email'] == author_receive:
-
-            return jsonify({'result': 'success', 'is_authorized': 'True'})
-        else:
-            return jsonify({'result': 'success', 'is_authorized': 'False'})
-        # userinfo = db.user.find_one({'id': payload['id']}, {'_id': 0})
-        # return jsonify({'result': 'success', 'nickname': userinfo['nick']})
-    except jwt.ExpiredSignatureError:
-        # 위를 실행했는데 만료시간이 지났으면 에러가 납니다.
-        return jsonify({'result': 'fail', 'msg': '로그인 시간이 만료되었습니다.'})
-    except jwt.exceptions.DecodeError:
-        return jsonify({'result': 'fail', 'msg': '로그인 정보가 존재하지 않습니다.'})
-
-
-@app.route('/api/delete_by__id', methods=['POST'])
-def api_delete():
-
-    _email_receive = request.form['_email_give']
-
-    file_name = db.reviews.find_one({'_email': ObjectId(_email_receive)})['file']
-    os.remove('static/'+file_name)
-    db.reviews.delete_one({'_email': ObjectId(_email_receive)})
-
-    return jsonify({'msg': '삭제 완료'})
-
-if __name__ == '__main__':
-    app.run('0.0.0.0', port=5000, debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=True)
