@@ -1,83 +1,37 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
-	<link rel="shortcut icon" href="{{url_for('static', filename='./images/asd.ico')}}">
-    <meta charset="UTF-8">
-    <title>Pet Diary - 로그인</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
-          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
-          crossorigin="anonymous">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
-
-    <style>
-        #loginForms {
-            width: 500px;
-            margin: 0 auto;
-            margin-top: 100px;
-        }
-
-        .btn {
-            display: block;
-            margin: 0 auto;
-            margin-top: 50px;
-        }
-        .signup {
-            margin-top: 10px;
-            font-size: 0.8rem;
-        }
-        .signup > a {
-            text-decoration: none;
-        }
-    </style>
-    <script>
-        function sign_in() {
-            let userid = $("#userid").val();
-            let userpw = $("#userpassword").val();
-
-            if (userid == "") {
-                alert("아이디를 입력해주세요!")
-                return false;
-            }
-            if (userpw == "") {
-                alert("비밀번호를 입력해주세요!")
-                return false;
-            }
-
-            $.ajax({
-                type: "POST",
-                url: "/api/login",
-                data: {
-                    id_give: userid,
-                    pw_give: userpw
-                },
-                success: function (response) {
-                    if (response['result'] == 'success') {
-                        $.cookie('mytoken', response['token']);
-                        window.location.href = '/main'
-                    } else {
-                        alert(response['msg'])
-                    }
-                }
-            });
-        }
-    </script>
-</head>
+<html lang="en">
+    <head>
+        <meta charset='utf-8' />
+        <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no' />
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+    </head>
 <body>
-{% include 'header.html' %}
-<form action="">
-    <div id="loginForms">
-        <div class="mb-3">
-            <label class="form-label">로그인</label>
-            <input type="text" class="form-control" id="userid" placeholder="아이디를 입력해주세요.">
+    <div class = "container">
+        <div class="row mt-5">
+            <h1>로그인</h1>
         </div>
-        <div class="mb-3">
-            <label class="form-label">비밀번호</label>
-            <input type="password" class="form-control" id="userpassword" placeholder="비밀번호를 입력해주세요.">
-            <p class="signup">아직 회원이 아니신가요? <a href="/sign_up">그럼 회원가입을 먼저해주세요!</a></p>
+
+        <div class="col-12">
+            <br><br>
+            <form method="POST">
+                {{form.csrf_token}}
+                <div class="form-group">
+                    {{form.useremail.label("이메일")}}
+                    {{form.useremail(class="form-control", placeholder="이메일")}}
+                </div>
+                <div class="form-group">
+                    {{form.password.label("비밀번호")}}
+                    {%if form.password.errors%}
+                    {{form.password.errors.0}}
+                    {%endif%} <!--실패 안하면 비밀번호 넘김-->
+                    {{form.password(class="form-control", placeholder="비밀번호")}}
+                </div>
+                <button type="submit" class="btn btn-primary">제출</button>
+            </form>
         </div>
-        <button type="submit" class="btn btn-primary btn-lg" onclick="sign_in()">로그인 하기</button>
     </div>
-</form>
 </body>
 </html>

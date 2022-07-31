@@ -1,13 +1,13 @@
-import os  # 절대경로를 지정하기 위한 Os모듈 임포트
-from flask import Flask
-from flask import request  # 회원정보 제출했을때 받아오기 위한 request, post요청을 활성화시키기 위함
-from flask import redirect  # 페이지 이동시키는 함수
+import os
+from flask import Flask, session
+from flask import request
+from flask import redirect
 from flask import render_template
 from models import db
 from models import Fcuser  # 모델의 클래스 가져오기.
 
 from flask_wtf.csrf import CSRFProtect
-from form import RegisterForm
+from form import RegisterForm, LoginForm
 
 app = Flask(__name__)
 
@@ -31,6 +31,19 @@ def register():
 
     return render_template('register.html', form=form)
 
+@app.route('/login', methods=['GET','POST'])
+def login():
+    form = LoginForm() #로그인폼
+    if form.validate_on_submit(): #유효성 검사
+        print('{}가 로그인 했습니다'.format(form.data.get('useremail')))
+        session['useremail']=form.data.get('useremail') #form에서 가져온 userid를 세션에 저장
+        return redirect('/') #성공하면 main.html로
+    return render_template('login.html', form=form)
+
+@app.route('/logout', methods=['GET'])
+def logout():
+    session.pop('userid', None)
+    return redirect('/')
 
 if __name__ == "__main__":
     basedir = os.path.abspath(os.path.dirname(__file__)) # db파일 절대경로
