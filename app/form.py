@@ -3,7 +3,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, EmailField, TextAreaField
 from wtforms.validators import DataRequired, EqualTo, Email, Length
 
-from Re_neighborhood.app.models import Fcuser
+from models import Fcuser
 
 
 class RegisterForm(FlaskForm):

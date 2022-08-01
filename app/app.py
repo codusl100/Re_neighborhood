@@ -1,8 +1,8 @@
 import os
-from flask import Flask, session
+from flask import Flask, jsonify, render_template, session
 from flask import request
 from flask import redirect
-from flask import render_template
+from flask_restx import Resource, Api
 from models import db
 from models import Fcuser  # 모델의 클래스 가져오기.
 
@@ -10,6 +10,17 @@ from flask_wtf.csrf import CSRFProtect
 from form import RegisterForm, LoginForm
 
 app = Flask(__name__)
+api = Api(
+    app,
+    version='0.1',
+    title="Re_neighborhood API Server",
+    description="Re_neighborhood API Server",
+    terms_url="/",
+    contact="codusl100@naver.com",
+    license="MIT"
+)
+
+#api.add_namespace(Auth, '/auth')
 
 @app.route('/')
 def main():
